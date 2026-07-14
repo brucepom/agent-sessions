@@ -490,6 +490,18 @@ final class UnifiedSessionIndexer: ObservableObject {
             recomputeNow()
         }
     }
+    @Published var hideCLISessions: Bool = UserDefaults.standard.bool(forKey: PreferencesKey.Unified.hideCLISessions) {
+        didSet {
+            UserDefaults.standard.set(hideCLISessions, forKey: PreferencesKey.Unified.hideCLISessions)
+            recomputeNow()
+        }
+    }
+    @Published var hideSubagentSessions: Bool = UserDefaults.standard.bool(forKey: PreferencesKey.Unified.hideSubagentSessions) {
+        didSet {
+            UserDefaults.standard.set(hideSubagentSessions, forKey: PreferencesKey.Unified.hideSubagentSessions)
+            recomputeNow()
+        }
+    }
     @Published var showArchivedCodexDesktopOnly: Bool = UserDefaults.standard.bool(forKey: PreferencesKey.Unified.showArchivedCodexDesktopOnly) {
         didSet {
             UserDefaults.standard.set(showArchivedCodexDesktopOnly, forKey: PreferencesKey.Unified.showArchivedCodexDesktopOnly)
@@ -1051,6 +1063,13 @@ final class UnifiedSessionIndexer: ObservableObject {
                         (s.source == .cursor && effectiveCursor) ||
                         (s.source == .pi && effectivePi)
                     }
+                }
+                base = base.filter {
+                    Self.passesSessionScopeFilters(
+                        $0,
+                        hideCLISessions: self.hideCLISessions,
+                        hideSubagentSessions: self.hideSubagentSessions
+                    )
                 }
 
                 let filters = Filters(query: q,
@@ -2650,6 +2669,20 @@ final class UnifiedSessionIndexer: ObservableObject {
         return session.messageCount == 0 || session.messageCount > 2
     }
 
+    static func passesSessionScopeFilters(
+        _ session: Session,
+        hideCLISessions: Bool,
+        hideSubagentSessions: Bool
+    ) -> Bool {
+        if hideSubagentSessions && (session.isSubagent || session.surface == .subagent) {
+            return false
+        }
+        if hideCLISessions && session.isCLISession {
+            return false
+        }
+        return true
+    }
+
     private func bumpFavoritesSnapshotVersion() {
         favoritesSnapshotVersion &+= 1
         favoritesAggregationVersion.send(favoritesSnapshotVersion)
@@ -2672,6 +2705,12 @@ final class UnifiedSessionIndexer: ObservableObject {
             case .cursor:   return cursorAgentEnabled && includeCursor
             case .pi:       return piAgentEnabled && includePi
             }
+        }.filter {
+            Self.passesSessionScopeFilters(
+                $0,
+                hideCLISessions: hideCLISessions,
+                hideSubagentSessions: hideSubagentSessions
+            )
         }
 
         // Apply FilterEngine (query, date, model, kinds, project, path)

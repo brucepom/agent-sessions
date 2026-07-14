@@ -1732,6 +1732,11 @@ struct UnifiedSessionsView: View {
                     .disabled(collapsedParents.isEmpty)
                 }
 
+                SessionScopeMenu(
+                    hideCLISessions: $unified.hideCLISessions,
+                    hideSubagentSessions: $unified.hideSubagentSessions
+                )
+
                 if codexAgentEnabled {
                     Button("") { unified.includeCodex.toggle() }
                         .keyboardShortcut("1", modifiers: .command)
@@ -3480,6 +3485,52 @@ private struct AgentOverflowMenu: View {
         .fixedSize()
         .help("Show or hide agents in the list")
         .accessibilityLabel(Text("Agent filters"))
+    }
+}
+
+/// Persistent visibility filters for session kinds that are often useful for
+/// diagnostics but noisy in an attention-oriented desktop workflow.
+private struct SessionScopeMenu: View {
+    @Binding var hideCLISessions: Bool
+    @Binding var hideSubagentSessions: Bool
+
+    private var activeFilterCount: Int {
+        (hideCLISessions ? 1 : 0) + (hideSubagentSessions ? 1 : 0)
+    }
+
+    var body: some View {
+        Menu {
+            Toggle("Hide CLI sessions", isOn: $hideCLISessions)
+            Toggle("Hide subagents", isOn: $hideSubagentSessions)
+
+            if activeFilterCount > 0 {
+                Divider()
+                Button("Show all session types") {
+                    hideCLISessions = false
+                    hideSubagentSessions = false
+                }
+            }
+        } label: {
+            HStack(spacing: 4) {
+                Image(systemName: activeFilterCount > 0
+                      ? "line.3.horizontal.decrease.circle.fill"
+                      : "line.3.horizontal.decrease.circle")
+                Text("Scope")
+                if activeFilterCount > 0 {
+                    Text("\(activeFilterCount)")
+                        .font(.system(size: 9, weight: .bold, design: .rounded))
+                }
+            }
+            .foregroundStyle(activeFilterCount > 0 ? Color.accentColor : .primary)
+            .agentPillSurface()
+        }
+        .menuStyle(.button)
+        .buttonStyle(.plain)
+        .menuIndicator(.hidden)
+        .fixedSize()
+        .help(activeFilterCount > 0 ? "Session scope filters: \(activeFilterCount) active" : "Filter session types")
+        .accessibilityLabel(Text("Session scope filters"))
+        .accessibilityValue(Text(activeFilterCount > 0 ? "\(activeFilterCount) active" : "None active"))
     }
 }
 

@@ -105,6 +105,8 @@ enum PreferencesKey {
         static let showSizeColumn = "UnifiedShowSizeColumn"
         static let showStarColumn = "UnifiedShowStarColumn"
         static let hasCommandsOnly = "UnifiedHasCommandsOnly"
+        static let hideCLISessions = "UnifiedHideCLISessions"
+        static let hideSubagentSessions = "UnifiedHideSubagentSessions"
         static let showArchivedCodexDesktopOnly = "UnifiedShowArchivedCodexDesktopOnly"
         static let showArchivedClaudeDesktopOnly = "UnifiedShowArchivedClaudeDesktopOnly"
         static let collapsedHierarchyParents = "UnifiedCollapsedHierarchyParents"

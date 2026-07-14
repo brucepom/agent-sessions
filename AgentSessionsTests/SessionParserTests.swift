@@ -89,6 +89,86 @@ final class SessionParserTests: XCTestCase {
         )
     }
 
+    private func makeScopeFilterSession(
+        id: String,
+        source: SessionSource,
+        surface: SessionSurface?,
+        parentSessionID: String? = nil,
+        relationshipKind: SessionRelationshipKind? = nil,
+        originSource: String? = nil
+    ) -> Session {
+        Session(
+            id: id,
+            source: source,
+            startTime: nil,
+            endTime: nil,
+            model: nil,
+            filePath: "/tmp/\(id).jsonl",
+            eventCount: 0,
+            events: [],
+            cwd: nil,
+            repoName: nil,
+            lightweightTitle: id,
+            parentSessionID: parentSessionID,
+            relationshipKind: relationshipKind,
+            originSource: originSource,
+            surface: surface
+        )
+    }
+
+    func testUnifiedSessionScopeFiltersHideCLIAndSubagentsIndependently() {
+        let desktop = makeScopeFilterSession(id: "desktop", source: .codex, surface: .desktop)
+        let cli = makeScopeFilterSession(id: "cli", source: .codex, surface: .cli)
+        let subagent = makeScopeFilterSession(
+            id: "subagent",
+            source: .claude,
+            surface: .desktop,
+            parentSessionID: "parent",
+            relationshipKind: .subagent
+        )
+        let cursor = makeScopeFilterSession(id: "cursor", source: .cursor, surface: nil)
+        let legacyCodexCLI = makeScopeFilterSession(id: "legacy-cli", source: .codex, surface: nil)
+        let claudeDesktop = makeScopeFilterSession(
+            id: "claude-desktop",
+            source: .claude,
+            surface: nil,
+            originSource: "local-agent-mode"
+        )
+        let surfaceOnlySubagent = makeScopeFilterSession(
+            id: "surface-subagent",
+            source: .codex,
+            surface: .subagent
+        )
+
+        XCTAssertTrue(UnifiedSessionIndexer.passesSessionScopeFilters(
+            desktop, hideCLISessions: true, hideSubagentSessions: true
+        ))
+        XCTAssertFalse(UnifiedSessionIndexer.passesSessionScopeFilters(
+            cli, hideCLISessions: true, hideSubagentSessions: false
+        ))
+        XCTAssertTrue(UnifiedSessionIndexer.passesSessionScopeFilters(
+            cli, hideCLISessions: false, hideSubagentSessions: true
+        ))
+        XCTAssertFalse(UnifiedSessionIndexer.passesSessionScopeFilters(
+            subagent, hideCLISessions: false, hideSubagentSessions: true
+        ))
+        XCTAssertTrue(UnifiedSessionIndexer.passesSessionScopeFilters(
+            subagent, hideCLISessions: true, hideSubagentSessions: false
+        ))
+        XCTAssertTrue(UnifiedSessionIndexer.passesSessionScopeFilters(
+            cursor, hideCLISessions: true, hideSubagentSessions: true
+        ))
+        XCTAssertFalse(UnifiedSessionIndexer.passesSessionScopeFilters(
+            legacyCodexCLI, hideCLISessions: true, hideSubagentSessions: false
+        ))
+        XCTAssertTrue(UnifiedSessionIndexer.passesSessionScopeFilters(
+            claudeDesktop, hideCLISessions: true, hideSubagentSessions: true
+        ))
+        XCTAssertFalse(UnifiedSessionIndexer.passesSessionScopeFilters(
+            surfaceOnlySubagent, hideCLISessions: false, hideSubagentSessions: true
+        ))
+    }
+
     private func createOpenCodeSQLiteFixture(at url: URL) throws {
         var db: OpaquePointer?
         guard sqlite3_open(url.path, &db) == SQLITE_OK else {

@@ -97,6 +97,24 @@ public struct Session: Identifiable, Equatable, Codable, Sendable {
     public var isSubagent: Bool { effectiveRelationshipKind == .subagent }
     public var isSideChat: Bool { effectiveRelationshipKind == .sideChat }
 
+    /// Whether this row represents a top-level CLI session. Keep this aligned
+    /// with the surface badge classification used by the unified session list:
+    /// legacy Codex and Claude records without explicit surface metadata are
+    /// CLI unless desktop metadata or a subagent relationship says otherwise.
+    public var isCLISession: Bool {
+        guard !isSideChat, !isSubagent else { return false }
+        if isCodexDesktopSession || isClaudeDesktopSession { return false }
+
+        switch surface ?? codexSurface {
+        case .cli:
+            return true
+        case .desktop, .vscode, .subagent:
+            return false
+        case .other, .unknown, .none:
+            return source == .codex || source == .claude
+        }
+    }
+
     /// The `agentType` value Claude Code writes (in agent-<id>.meta.json) for
     /// Workflow-spawned subagents. Single source of truth for detection + badge.
     public static let claudeWorkflowSubagentType = "workflow-subagent"
