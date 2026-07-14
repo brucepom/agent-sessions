@@ -97,6 +97,30 @@ public struct Session: Identifiable, Equatable, Codable, Sendable {
     public var isSubagent: Bool { effectiveRelationshipKind == .subagent }
     public var isSideChat: Bool { effectiveRelationshipKind == .sideChat }
 
+    /// Cursor's non-interactive CLI can write a child run as an ordinary
+    /// top-level transcript, without the parent metadata used by Cursor's
+    /// native `subagents/` layout. A managed worktree owned by another agent
+    /// harness is a conservative signal that the row is delegated rather than
+    /// a top-level Cursor Desktop task.
+    public var isLikelyDelegatedCursorSession: Bool {
+        guard source == .cursor, !isSideChat, !isSubagent else { return false }
+
+        if let cwd = lightweightCwd?.lowercased(),
+           cwd.contains("/.codex/worktrees/") || cwd.contains("/claude-worktrees/") {
+            return true
+        }
+
+        let components = URL(fileURLWithPath: filePath).pathComponents
+        guard let transcriptIndex = components.firstIndex(of: "agent-transcripts"),
+              transcriptIndex > 0 else {
+            return false
+        }
+
+        let encodedProjectPath = components[transcriptIndex - 1].lowercased()
+        return encodedProjectPath.contains("-codex-worktrees-") ||
+            encodedProjectPath.contains("-claude-worktrees-")
+    }
+
     /// Whether this row represents a top-level CLI session. Keep this aligned
     /// with the surface badge classification used by the unified session list:
     /// legacy Codex and Claude records without explicit surface metadata are

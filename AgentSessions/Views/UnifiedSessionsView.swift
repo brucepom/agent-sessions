@@ -3501,7 +3501,7 @@ private struct SessionScopeMenu: View {
     var body: some View {
         Menu {
             Toggle("Hide CLI sessions", isOn: $hideCLISessions)
-            Toggle("Hide subagents", isOn: $hideSubagentSessions)
+            Toggle("Hide subagents & delegated sessions", isOn: $hideSubagentSessions)
 
             if activeFilterCount > 0 {
                 Divider()

@@ -2674,7 +2674,11 @@ final class UnifiedSessionIndexer: ObservableObject {
         hideCLISessions: Bool,
         hideSubagentSessions: Bool
     ) -> Bool {
-        if hideSubagentSessions && (session.isSubagent || session.surface == .subagent) {
+        if hideSubagentSessions && (
+            session.isSubagent ||
+            session.surface == .subagent ||
+            session.isLikelyDelegatedCursorSession
+        ) {
             return false
         }
         if hideCLISessions && session.isCLISession {

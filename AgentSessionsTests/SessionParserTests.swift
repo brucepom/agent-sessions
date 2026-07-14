@@ -93,6 +93,8 @@ final class SessionParserTests: XCTestCase {
         id: String,
         source: SessionSource,
         surface: SessionSurface?,
+        filePath: String? = nil,
+        cwd: String? = nil,
         parentSessionID: String? = nil,
         relationshipKind: SessionRelationshipKind? = nil,
         originSource: String? = nil
@@ -103,10 +105,10 @@ final class SessionParserTests: XCTestCase {
             startTime: nil,
             endTime: nil,
             model: nil,
-            filePath: "/tmp/\(id).jsonl",
+            filePath: filePath ?? "/tmp/\(id).jsonl",
             eventCount: 0,
             events: [],
-            cwd: nil,
+            cwd: cwd,
             repoName: nil,
             lightweightTitle: id,
             parentSessionID: parentSessionID,
@@ -139,6 +141,30 @@ final class SessionParserTests: XCTestCase {
             source: .codex,
             surface: .subagent
         )
+        let delegatedCursor = makeScopeFilterSession(
+            id: "delegated-cursor",
+            source: .cursor,
+            surface: nil,
+            filePath: "/Users/test/.cursor/projects/Users-test-codex-worktrees-ecee-spruce/agent-transcripts/delegated-cursor/delegated-cursor.jsonl"
+        )
+        let claudeDelegatedCursor = makeScopeFilterSession(
+            id: "claude-delegated-cursor",
+            source: .cursor,
+            surface: nil,
+            filePath: "/Users/test/.cursor/projects/Users-test-Work-project-claude-worktrees-review/agent-transcripts/claude-delegated-cursor/claude-delegated-cursor.jsonl"
+        )
+        let cwdDelegatedCursor = makeScopeFilterSession(
+            id: "cwd-delegated-cursor",
+            source: .cursor,
+            surface: nil,
+            cwd: "/Users/test/.codex/worktrees/ecee/spruce"
+        )
+        let cursorInOrdinaryProject = makeScopeFilterSession(
+            id: "cursor-desktop",
+            source: .cursor,
+            surface: nil,
+            filePath: "/Users/test/.cursor/projects/Users-test-Work-spruce/agent-transcripts/cursor-desktop/cursor-desktop.jsonl"
+        )
 
         XCTAssertTrue(UnifiedSessionIndexer.passesSessionScopeFilters(
             desktop, hideCLISessions: true, hideSubagentSessions: true
@@ -166,6 +192,25 @@ final class SessionParserTests: XCTestCase {
         ))
         XCTAssertFalse(UnifiedSessionIndexer.passesSessionScopeFilters(
             surfaceOnlySubagent, hideCLISessions: false, hideSubagentSessions: true
+        ))
+        XCTAssertFalse(UnifiedSessionIndexer.passesSessionScopeFilters(
+            delegatedCursor, hideCLISessions: false, hideSubagentSessions: true
+        ))
+        XCTAssertEqual(
+            UnifiedSessionsView.surfacePills(for: delegatedCursor).map(\.label),
+            ["deleg"]
+        )
+        XCTAssertTrue(UnifiedSessionIndexer.passesSessionScopeFilters(
+            delegatedCursor, hideCLISessions: true, hideSubagentSessions: false
+        ))
+        XCTAssertFalse(UnifiedSessionIndexer.passesSessionScopeFilters(
+            claudeDelegatedCursor, hideCLISessions: false, hideSubagentSessions: true
+        ))
+        XCTAssertFalse(UnifiedSessionIndexer.passesSessionScopeFilters(
+            cwdDelegatedCursor, hideCLISessions: false, hideSubagentSessions: true
+        ))
+        XCTAssertTrue(UnifiedSessionIndexer.passesSessionScopeFilters(
+            cursorInOrdinaryProject, hideCLISessions: true, hideSubagentSessions: true
         ))
     }
 

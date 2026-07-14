@@ -324,6 +324,9 @@ enum SessionRowsBuilder {
         if session.isSideChat {
             return [.standard(label: "desk", accessibilityLabel: "Desktop")]
         }
+        if session.isLikelyDelegatedCursorSession {
+            return [.standard(label: "deleg", accessibilityLabel: "Likely delegated session")]
+        }
         if let claudeDesktopPill = claudeDesktopSurfacePill(for: session, isArchived: isClaudeArchived) {
             return [claudeDesktopPill]
         }
