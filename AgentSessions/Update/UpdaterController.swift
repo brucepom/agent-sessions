@@ -43,8 +43,11 @@ final class UpdaterController: NSObject, ObservableObject, SPUUpdaterDelegate, S
         self.defaultAutoUpdateEnabled = (Bundle.main.object(forInfoDictionaryKey: "SUAutomaticallyUpdate") as? Bool) ?? false
         super.init()
 
-        // Skip initializing Sparkle when running tests to avoid timeouts and dialogs
-        guard !AppRuntime.isRunningTests else { return }
+        // Skip initializing Sparkle when running tests to avoid timeouts and dialogs.
+        // Local fork builds can opt out as well so the upstream appcast cannot
+        // replace their custom binary. Official builds omit this Info.plist key.
+        let isForkBuild = (Bundle.main.object(forInfoDictionaryKey: "AgentSessionsForkBuild") as? Bool) == true
+        guard !AppRuntime.isRunningTests, !isForkBuild else { return }
 
         // Initialize Sparkle controller with self as delegates
         // Use startingUpdater: false to avoid early initialization errors
